@@ -2,6 +2,21 @@
 
 $piece = to_a($_REQUEST['piece']);
 $board = explode(' ',$_REQUEST['board']);
+
+$defaults = array(
+'wall_below' => 1,
+'piece_below' => 1,
+'wall_on_left' => 1,
+'piece_on_left' => 1,
+'wall_on_right' => 1,
+'piece_on_right' => 1,
+'space_filled' => 7,
+'blank_space_below' => -6,
+'top_modifier' => 1,
+'bonus_modifier' => 1);
+
+$ga = array_merge($defaults,$_REQUEST);
+
 //print_r($board);
 
 //$debug = true;
@@ -17,7 +32,7 @@ for($i = 0; $i < 4; $i++)
 	for($pos = 0; $pos < 11 - $width; $pos ++)
 	{
 		$score = score($piece,$pos, $board);
-		if($score >= $max_score)
+		if($score > $max_score)
 		{
 			$max_pos = $pos;
 			$max_deg = ($i + 1) * 90;
@@ -47,6 +62,7 @@ echo "position=$max_pos&degrees=$max_deg";
 function score($piece,$position, $board)
 {
 	global $debug;
+	global $ga;
 	$good = true;
 	$width = width($piece);
 	$top = 0;
@@ -75,19 +91,32 @@ function score($piece,$position, $board)
 					if($piece[$i - 1][$j] == 1)
 					{
 						$good = false;
-						$bonus += 1;
+						if($pixel == 'x')
+							$bonus += $ga['wall_below'];
+						else
+							$bonus += $ga['piece_below'];
 					}
 					if($piece[$i][$j + 1] == 1)
-						$bonus += 1;
+					{
+						if($pixel == 'x')
+							$bonus += $ga['wall_on_left'];
+						else
+							$bonus += $ga['piece_on_left'];
+					}
 					if($piece[$i][$j - 1] == 1)
-						$bonus += 1;
+					{
+						if($pixel == 'x')
+							$bonus += $ga['wall_on_right'];
+						else
+							$bonus += $ga['piece_on_right'];
+					}
 
 					if(isset($piece[$i][$j]) && $piece[$i][$j] == 0)
-						$bonus += 7;
+						$bonus += $ga['space_filled'];
 				}
 				elseif(!($piece[$i][$j]) && $pixel == '.' && $piece[$i - 1][$j])
 				{
-					$bonus -= 6;
+					$bonus += $ga['blank_space_below'];
 				}
 			}
 			if($debug)
@@ -99,7 +128,8 @@ function score($piece,$position, $board)
 	global $debug;
 	if($debug)
 		echo "Top: $top Bonus: $bonus\n";
-	return $top + $bonus;
+	$total = $top * $ga['top_modifier'] + $bonus * $ga['bonus_modifier'];
+	return $total;
 }
 
 function width($piece)
